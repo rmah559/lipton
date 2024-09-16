@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lipton School Announcements</title>
+
+    <!-- Include Flatpickr for the calendar widget -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <style>
+        body {
+            font-family: Georgia, serif;
+            font-size: 13px; /* Font size changed to 13 */
+            background-color: #ffeb3b; /* Mustard yellow background */
+            color: black;
+            text-align: center; /* Center-align content */
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        #logo {
+            margin-top: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        label {
+            font-weight: bold; /* Bold labels */
+        }
+
+        .announcement-container {
+            margin-top: 20px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        button {
+            margin: 5px;
+        }
+
+        textarea {
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lipton School Announcements</h1>
+        <h2 id="currentDate"></h2> <!-- Current date displayed here -->
+        <img id="logo" src="https://cdn1.sportngin.com/attachments/photo/a3ca-144592885/QV_Lipton_Cougars_large.JPG" alt="Lipton School Cougar Logo" width="150">
+
+        <form id="announcementForm">
+            <label for="announcementText">Enter Announcement:</label><br>
+            <textarea id="announcementText" rows="4" cols="50" required></textarea><br>
+
+            <label for="category">Select Category:</label><br>
+            <select id="category" required>
+                <option value="General Announcements">General Announcements</option>
+                <option value="Extra Curricular">Extra Curricular</option>
+                <option value="Special Events">Special Events</option>
+            </select><br>
+
+            <label for="datePicker">Select Date (YYYY-MM-DD):</label><br>
+            <input type="text" id="datePicker" required><br>
+
+            <button type="submit">Save Announcement</button>
+        </form>
+
+        <h2>Show Announcements</h2>
+        <button id="showAnnouncements">Show Announcements</button>
+
+        <div id="announcementsDisplay" class="announcement-container"></div>
+    </div>
+
+    <!-- Include Flatpickr for the calendar widget -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script>
+        // Initialize Flatpickr (Calendar Widget)
+        flatpickr("#datePicker", {
+            dateFormat: "Y-m-d"
+        });
+
+        // Display the current date under the title
+        const currentDate = new Date().toISOString().split('T')[0];
+        document.getElementById("currentDate").innerText = `Today's Date: ${currentDate}`;
+
+        // Save announcement to localStorage
+        document.getElementById("announcementForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            const announcementText = document.getElementById("announcementText").value;
+            const category = document.getElementById("category").value;
+            const selectedDate = document.getElementById("datePicker").value;
+
+            if (!announcementText.trim()) {
+                alert("Please enter a valid announcement.");
+                return;
+            }
+
+            const announcements = JSON.parse(localStorage.getItem("announcements")) || [];
+            announcements.push({
+                text: announcementText,
+                category: category,
+                date: selectedDate,
+                createdAt: new Date()
+            });
+
+            localStorage.setItem("announcements", JSON.stringify(announcements));
+            alert("Announcement saved successfully!"); // Confirmation alert
+            document.getElementById("announcementForm").reset();
+        });
+
+        // Show announcements for the selected date
+        document.getElementById("showAnnouncements").addEventListener("click", function() {
+            const selectedDate = document.getElementById("datePicker").value;
+            const announcementsDisplay = document.getElementById("announcementsDisplay");
+            announcementsDisplay.innerHTML = "";
+
+            const announcements = JSON.parse(localStorage.getItem("announcements")) || [];
+            const filteredAnnouncements = announcements.filter(announcement => announcement.date === selectedDate);
+
+            if (filteredAnnouncements.length === 0) {
+                announcementsDisplay.innerHTML = "No announcements found for the selected date.";
+                return;
+            }
+
+            filteredAnnouncements.sort((a, b) => b.createdAt - a.createdAt);
+
+            filteredAnnouncements.forEach(announcement => {
+                announcementsDisplay.innerHTML += `
+                    <div>
+                        <h3>${announcement.category}</h3>
+                        <p>${announcement.text}</p>
+                        <p><small>${announcement.date}</small></p>
+                        <button onclick="deleteAnnouncement('${announcement.date}', '${announcement.text}')">Delete</button>
+                        <button onclick="editAnnouncement('${announcement.date}', '${announcement.text}', '${announcement.category}')">Edit</button>
+                    </div>
+                    <hr>
+                `;
+            });
+        });
+
+        // Delete announcement
+        function deleteAnnouncement(date, text) {
+            const announcements = JSON.parse(localStorage.getItem("announcements")) || [];
+            const filteredAnnouncements = announcements.filter(announcement => !(announcement.date === date && announcement.text === text));
+            
+            localStorage.setItem("announcements", JSON.stringify(filteredAnnouncements));
+            alert("Announcement deleted successfully.");
+            document.getElementById("showAnnouncements").click(); // Refresh announcements display
+        }
+
+        // Edit announcement
+        function editAnnouncement(date, text, category) {
+            document.getElementById("announcementText").value = text;
+            document.getElementById("category").value = category;
+            document.getElementById("datePicker").value = date;
+
+            deleteAnnouncement(date, text);  // Delete old announcement so it can be re-saved
+        }
+    </script>
+</body>
+</html>
